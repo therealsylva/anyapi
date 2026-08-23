@@ -1,0 +1,229 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://anyapi.dev/schema/v1alpha1.json",
+  "title": "AnyAPI API Definition",
+  "description": "Portable, secret-free HTTP API contract used by AnyAPI.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["apiVersion", "kind", "metadata", "commands"],
+  "properties": {
+    "apiVersion": { "const": "anyapi.dev/v1alpha1" },
+    "kind": { "const": "API" },
+    "metadata": { "$ref": "#/$defs/metadata" },
+    "defaultServer": { "$ref": "#/$defs/identifier" },
+    "servers": {
+      "type": "object",
+      "maxProperties": 1024,
+      "propertyNames": { "$ref": "#/$defs/identifier" },
+      "additionalProperties": { "$ref": "#/$defs/server" }
+    },
+    "auth": {
+      "type": "object",
+      "maxProperties": 1024,
+      "propertyNames": { "$ref": "#/$defs/identifier" },
+      "additionalProperties": { "$ref": "#/$defs/auth" }
+    },
+    "commands": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 10000,
+      "items": { "$ref": "#/$defs/command" }
+    },
+    "import": { "$ref": "#/$defs/import" }
+  },
+  "$defs": {
+    "identifier": {
+      "type": "string",
+      "maxLength": 128,
+      "pattern": "^[a-z][a-z0-9]*(?:[-_.][a-z0-9]+)*$"
+    },
+    "metadata": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name"],
+      "properties": {
+        "name": { "$ref": "#/$defs/identifier" },
+        "version": { "type": "string", "maxLength": 1024 },
+        "description": { "type": "string", "maxLength": 65536 },
+        "source": { "type": "string", "maxLength": 65536 }
+      }
+    },
+    "server": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["url"],
+      "properties": {
+        "url": { "type": "string", "minLength": 1, "maxLength": 65536 },
+        "description": { "type": "string", "maxLength": 65536 },
+        "variables": {
+          "type": "object",
+          "maxProperties": 2048,
+          "propertyNames": { "type": "string", "maxLength": 128, "pattern": "^[A-Za-z_][A-Za-z0-9_.-]*$" },
+          "additionalProperties": { "type": "string" }
+        }
+      }
+    },
+    "auth": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type"],
+      "properties": {
+        "type": { "enum": ["bearer", "oauth2", "openidconnect", "apiKey", "basic"] },
+        "description": { "type": "string", "maxLength": 65536 },
+        "in": { "enum": ["header", "query", "cookie"] },
+        "name": { "type": "string" },
+        "env": { "$ref": "#/$defs/environment" },
+        "usernameEnv": { "$ref": "#/$defs/environment" },
+        "passwordEnv": { "$ref": "#/$defs/environment" },
+        "scopes": {
+          "type": "array",
+          "maxItems": 2048,
+          "items": { "type": "string", "maxLength": 4096 },
+          "uniqueItems": true
+        }
+      }
+    },
+    "environment": {
+      "type": "string",
+      "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+    },
+    "parameter": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "in"],
+      "properties": {
+        "name": { "type": "string", "minLength": 1, "maxLength": 256 },
+        "flag": { "$ref": "#/$defs/identifier" },
+        "in": { "enum": ["path", "query", "header", "cookie", "body"] },
+        "type": { "enum": ["string", "integer", "number", "boolean", "array", "object"] },
+        "format": { "type": "string", "maxLength": 128 },
+        "description": { "type": "string", "maxLength": 65536 },
+        "required": { "type": "boolean" },
+        "positional": { "type": "boolean" },
+        "sensitive": { "type": "boolean" },
+        "default": true,
+        "example": true,
+        "enum": {
+          "type": "array",
+          "maxItems": 2048,
+          "items": { "type": ["string", "number", "integer", "boolean"] }
+        },
+        "style": {
+          "enum": ["simple", "label", "matrix", "form", "deepObject", "spaceDelimited", "pipeDelimited"]
+        },
+        "explode": { "type": "boolean" },
+        "jsonPath": { "type": "string", "maxLength": 4096 }
+      }
+    },
+    "requestBody": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "contentType": { "type": "string", "maxLength": 1024 },
+        "required": { "type": "boolean" },
+        "description": { "type": "string", "maxLength": 65536 },
+        "fields": {
+          "type": "array",
+          "maxItems": 2048,
+          "items": { "$ref": "#/$defs/parameter" }
+        },
+        "example": true
+      }
+    },
+    "operation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["transport", "method", "path"],
+      "properties": {
+        "transport": { "const": "http" },
+        "method": {
+          "type": "string",
+          "pattern": "^[A-Z][A-Z0-9!#$%&'*+.^_`|~-]*$"
+        },
+        "path": { "type": "string", "maxLength": 65536, "pattern": "^/" },
+        "server": { "type": "string" }
+      }
+    },
+    "response": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status"],
+      "properties": {
+        "status": { "type": "string" },
+        "description": { "type": "string", "maxLength": 65536 },
+        "contentType": { "type": "string", "maxLength": 1024 }
+      }
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "format": { "enum": ["curl", "openapi", "postman"] },
+        "operationId": { "type": "string", "maxLength": 4096 },
+        "pointer": { "type": "string", "maxLength": 65536 }
+      }
+    },
+    "command": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "path", "operation"],
+      "properties": {
+        "id": { "$ref": "#/$defs/identifier" },
+        "path": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 32,
+          "items": { "$ref": "#/$defs/identifier" }
+        },
+        "summary": { "type": "string", "maxLength": 65536 },
+        "description": { "type": "string", "maxLength": 65536 },
+        "operation": { "$ref": "#/$defs/operation" },
+        "parameters": {
+          "type": "array",
+          "maxItems": 2048,
+          "items": { "$ref": "#/$defs/parameter" }
+        },
+        "body": { "$ref": "#/$defs/requestBody" },
+        "auth": {
+          "type": "array",
+          "maxItems": 1024,
+          "items": { "$ref": "#/$defs/identifier" },
+          "uniqueItems": true
+        },
+        "responses": {
+          "type": "array",
+          "maxItems": 2048,
+          "items": { "$ref": "#/$defs/response" }
+        },
+        "source": { "$ref": "#/$defs/source" }
+      }
+    },
+    "diagnostic": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["severity", "code", "message"],
+      "properties": {
+        "severity": { "enum": ["info", "warning", "error"] },
+        "code": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "path": { "type": "string", "maxLength": 65536 },
+        "message": { "type": "string", "maxLength": 65536 },
+        "hint": { "type": "string", "maxLength": 65536 }
+      }
+    },
+    "import": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["format"],
+      "properties": {
+        "format": { "enum": ["curl", "openapi", "postman"] },
+        "source": { "type": "string" },
+        "fingerprint": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
+        "diagnostics": {
+          "type": "array",
+          "maxItems": 10000,
+          "items": { "$ref": "#/$defs/diagnostic" }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,9 @@
+/bin/
+/dist/
+/.anyapi/
+*.anyapi.tmp
+*.anytarget
+coverage.out
+*.prof
+*.test
+.DS_Store

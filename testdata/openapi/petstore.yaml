@@ -1,0 +1,62 @@
+openapi: 3.1.0
+info:
+  title: Petstore
+  version: 1.2.0
+  description: Example API used by the AnyAPI compatibility suite.
+servers:
+  - url: https://api.example.test/v1
+components:
+  securitySchemes:
+    petKey:
+      type: apiKey
+      in: header
+      name: X-Pet-Key
+  schemas:
+    PetInput:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+          description: Pet name
+        age:
+          type: integer
+          minimum: 0
+paths:
+  /pets/{petId}:
+    get:
+      operationId: pets.get
+      summary: Get a pet
+      security:
+        - petKey: []
+      parameters:
+        - name: petId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: verbose
+          in: query
+          schema:
+            type: boolean
+            default: false
+      responses:
+        "200":
+          description: Pet response
+          content:
+            application/json:
+              schema:
+                type: object
+  /pets:
+    post:
+      operationId: pets.create
+      summary: Create a pet
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PetInput"
+      responses:
+        "201":
+          description: Created
