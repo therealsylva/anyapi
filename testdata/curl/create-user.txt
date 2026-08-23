@@ -1,0 +1,5 @@
+curl --request POST \
+  --url 'https://api.example.test/v1/users/{user_id}?notify=true&api_key=sk_test_should_be_removed' \
+  --header 'Authorization: Bearer secret-token' \
+  --header 'Content-Type: application/json' \
+  --data '{"name":"Sylva","password":"do-not-compile"}'

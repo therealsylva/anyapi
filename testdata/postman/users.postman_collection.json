@@ -1,0 +1,61 @@
+{
+  "info": {
+    "_postman_id": "d40e2d50-7aa6-4cfd-b7dc-49adfac7ee13",
+    "name": "Users API",
+    "description": "Postman importer compatibility fixture",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "https://api.example.test/v2" },
+    { "key": "userId", "value": "usr_123" },
+    { "key": "token", "value": "secret-test-token" }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      { "key": "token", "value": "{{token}}", "type": "string" }
+    ]
+  },
+  "item": [
+    {
+      "name": "users",
+      "item": [
+        {
+          "name": "get",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/users/:userId?expand=profile",
+              "host": ["{{baseUrl}}"],
+              "path": ["users", ":userId"],
+              "query": [
+                { "key": "expand", "value": "profile" }
+              ],
+              "variable": [
+                { "key": "userId", "value": "usr_123" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "create",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"name\":\"Sylva\",\"password\":\"never-compile-this\"}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/users"
+          }
+        }
+      ]
+    }
+  ]
+}

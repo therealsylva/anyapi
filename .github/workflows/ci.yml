@@ -1,0 +1,99 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    name: Format, vet, race, and fuzz
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - name: Set up Go
+        uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
+        with:
+          go-version-file: go.mod
+          cache: true
+      - name: Run quality suite
+        run: ./scripts/check.sh
+      - name: Fuzz shell tokenizer
+        run: go test -run=^$ -fuzz=FuzzSplit -fuzztime=5s ./internal/shelllex
+      - name: Fuzz cURL importer
+        run: go test -run=^$ -fuzz=FuzzCurlImporter -fuzztime=5s ./internal/importer
+      - name: Fuzz structured importers
+        run: go test -run=^$ -fuzz=FuzzStructuredImporters -fuzztime=5s ./internal/importer
+      - name: Fuzz AnyAPI documents
+        run: go test -run=^$ -fuzz=FuzzDecode -fuzztime=5s ./internal/specio
+
+  platforms:
+    name: Test (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - name: Set up Go
+        uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
+        with:
+          go-version-file: go.mod
+          cache: true
+      - name: Run tests
+        run: go test -count=1 ./...
+
+  vulnerabilities:
+    name: Govulncheck
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+      - name: Scan reachable Go code
+        uses: golang/govulncheck-action@032d45514ae346b1db93c04b0c90b841c370344f # v1.1.0
+        with:
+          go-version-file: go.mod
+          go-package: ./...
+          repo-checkout: false
+
+  binaries:
+    name: Cross-platform binaries
+    needs: [quality, platforms, vulnerabilities]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - name: Set up Go
+        uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
+        with:
+          go-version-file: go.mod
+          cache: true
+      - name: Build release matrix
+        env:
+          VERSION: 0.1.0-ci
+          COMMIT: ${{ github.sha }}
+          BUILD_DATE: ${{ github.event.repository.updated_at }}
+        run: ./scripts/build-release.sh
+      - name: Upload binaries
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: anyapi-binaries-${{ github.sha }}
+          path: dist/
+          if-no-files-found: error
+          retention-days: 14
+          compression-level: 0
