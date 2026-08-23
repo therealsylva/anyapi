@@ -3,6 +3,7 @@ package specio
 import (
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 
 	"github.com/therealsylva/anyapi/internal/model"
@@ -26,7 +27,9 @@ func TestRoundTripAndAtomicWrite(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if stat.Mode().Perm()&0o077 != 0 {
+	// Windows exposes only its read-only bit through os.FileMode; access is
+	// enforced by the file's inherited ACL rather than Unix permission bits.
+	if runtime.GOOS != "windows" && stat.Mode().Perm()&0o077 != 0 {
 		t.Fatalf("document permissions are too broad: %o", stat.Mode().Perm())
 	}
 }
