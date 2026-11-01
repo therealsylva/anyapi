@@ -4,7 +4,7 @@ go 1.27
 
 require (
 	github.com/chzyer/readline v1.5.1
-	github.com/fxamacker/cbor/v2 v2.9.3
+	github.com/fxamacker/cbor/v2 v2.10.0
 	github.com/klauspost/compress v1.19.2
 	github.com/spf13/cobra v1.10.2
 	github.com/zalando/go-keyring v0.2.8
